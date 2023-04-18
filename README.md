@@ -1,3 +1,19 @@
+# Project: PINN-based SDE Solver
+
+* [x] Make changes and compile local NeuralPDE2
+* [ ] Add Wiener process handling for SDEs in solver
+* [ ] Test on SDEs to make sure it works
+
+
+
+
+
+
+
+
+
+
+
 # NeuralPDE
 
 [![Join the chat at https://julialang.zulipchat.com #sciml-bridged](https://img.shields.io/static/v1?label=Zulip&message=chat&color=9558b2&labelColor=389826)](https://julialang.zulipchat.com/#narrow/stream/279055-sciml-bridged)

@@ -1,4 +1,7 @@
-abstract type NeuralPDEAlgorithm <: DiffEqBase.AbstractODEAlgorithm end
+using DiffEqBase
+abstract type AbstractTrainingStrategy end
+
+abstract type NeuralPDEAlgorithm <: DiffEqBase.AbstractSDEAlgorithm end
 
 """
 ```julia
@@ -93,6 +96,7 @@ end
 function NNODE(chain, opt, init_params = nothing;
                strategy = nothing,
                autodiff = false, batch = nothing, additional_loss = nothing, kwargs...)
+    print("Georgios is here")
     NNODE(chain, opt, init_params, autodiff, batch, strategy, additional_loss, kwargs)
 end
 
@@ -353,7 +357,7 @@ end
 
 SciMLBase.interp_summary(::NNODEInterpolation) = "Trained neural network interpolation"
 
-function DiffEqBase.__solve(prob::DiffEqBase.AbstractODEProblem,
+function DiffEqBase.__solve(prob::DiffEqBase.AbstractDEProblem,
                             alg::NNODE,
                             args...;
                             dt = nothing,

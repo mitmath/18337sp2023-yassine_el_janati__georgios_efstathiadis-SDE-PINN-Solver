@@ -357,7 +357,15 @@ end
 
 SciMLBase.interp_summary(::NNODEInterpolation) = "Trained neural network interpolation"
 
-function DiffEqBase.__solve(prob::DiffEqBase.AbstractDEProblem,
+function W(t, zetas)
+    sqrt(2) * sum(zetas[k] * sin((k - 1/2) * π * t) / (k - 1/2 * π)  for k in 1:length(zetas))
+end
+
+function ∂W_∂t(t, zetas)
+    sqrt(2) * sum(zetas[k] * cos((k - 1/2) * π * t) * (k - 1/2) * π / (k - 1/2 * π)  for k in 1:length(zetas))
+end
+
+function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
                             alg::NNODE,
                             args...;
                             dt = nothing,
@@ -371,14 +379,24 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractDEProblem,
                             maxiters = nothing)
     u0 = prob.u0
     tspan = prob.tspan
+    # Define the original drift and diffusion terms of the SDE
     f = prob.f
+    g = prob.g # the noise function
+
     p = prob.p
     t0 = tspan[1]
+
+    # generate the normal distribution
+    zetas = randn(p.n)
 
     #hidden layer
     chain = alg.chain
     opt = alg.opt
     autodiff = alg.autodiff
+
+    # change the input dim for the chain
+    layer1 = Dense(1 + p.n, length(chain.layers[1].bias), chain.layers[1].σ)
+    chain = Chain(layer1, chain.layers[2:end]...)
 
     #train points generation
     init_params = alg.init_params

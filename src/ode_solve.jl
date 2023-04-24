@@ -96,7 +96,7 @@ end
 function NNODE(chain, opt, init_params = nothing;
                strategy = nothing,
                autodiff = false, batch = nothing, additional_loss = nothing, kwargs...)
-    print("Georgios is here")
+    # print("Georgios is here")
     NNODE(chain, opt, init_params, autodiff, batch, strategy, additional_loss, kwargs)
 end
 
@@ -377,6 +377,7 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
                             verbose = false,
                             saveat = nothing,
                             maxiters = nothing)
+    print("Called function solve... (ode_solve)")
     u0 = prob.u0
     tspan = prob.tspan
     # Define the original drift and diffusion terms of the SDE
@@ -412,6 +413,7 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
     end
 
     try
+        print("Computing phi...")
         phi(t0, init_params)
     catch err
         if isa(err, DimensionMismatch)

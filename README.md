@@ -3,6 +3,7 @@
 * [x] Make changes and compile local NeuralPDE2
 * [ ] Add Wiener process handling for SDEs in solver
   * [x] Change the network to handle the Wiener process (+n input dim)
+    * [ ] Currently, give a SDEProblem as an input (instead of ODEProblem) calls rode_solve instead of ode_solve. Investigate this issue.
   * [ ] Change the loss function to handle the Wiener process
   * [ ] ...
 * [ ] Test on SDEs to make sure it works

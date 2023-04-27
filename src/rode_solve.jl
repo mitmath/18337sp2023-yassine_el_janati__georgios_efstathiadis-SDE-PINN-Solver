@@ -30,7 +30,7 @@ function DiffEqBase.solve(prob::DiffEqBase.AbstractRODEProblem,
                           abstol = 1.0f-6,
                           verbose = false,
                           maxiters = 100)
-    print("Called function solve... (rode_solve)")
+    println("Called function solve... (rode_solve)")
     DiffEqBase.isinplace(prob) && error("Only out-of-place methods are allowed!")
 
     u0 = prob.u0

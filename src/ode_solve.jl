@@ -377,7 +377,7 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
                             verbose = false,
                             saveat = nothing,
                             maxiters = nothing)
-    print("Called function solve... (ode_solve)")
+    println("Called function solve... (ode_solve)")
     u0 = prob.u0
     tspan = prob.tspan
     # Define the original drift and diffusion terms of the SDE

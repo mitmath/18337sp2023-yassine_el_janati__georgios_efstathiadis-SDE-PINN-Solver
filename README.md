@@ -1,11 +1,10 @@
 # Project: PINN-based SDE Solver
 
 * [x] Make changes and compile local NeuralPDE2
-* [ ] Add Wiener process handling for SDEs in solver
-  * [x] Change the network to handle the Wiener process (+n input dim)
+* [x] Change the network to handle the Wiener process (+n input dim)
     * [x] ~~Currently, give a SDEProblem as an input (instead of ODEProblem) calls rode_solve instead of ode_solve. Investigate this issue.~~ Solved by removing rode_solve.jl inclusion in module export.
     * Note: don't use additional parameters *p* to get the number of KKL terms to keep because then we have to modify every solve function because it gets passed in the callback. Instead, we hard-code the n parameter.
-
+  * [x] Debugged the network to handle the Wiener process; without actually adding any SDEs, the network can handle the Wiener process for ODE.
   * [ ] Change the loss function to handle the Wiener process
   * [ ] ...
 * [ ] Test on SDEs to make sure it works

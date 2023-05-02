@@ -139,7 +139,6 @@ function generate_phi_θ(chain::Flux.Chain, t, u0, init_params::Nothing)
     θ, re = Flux.destructure(chain)
     print("Georgios is here")
     print(u0)
-    print(θ)
     ODEPhi(re, t, u0), θ
 end
 
@@ -179,20 +178,69 @@ end
 
 function (f::ODEPhi{C, T, U})(t::Number,
                               θ) where {C <: Optimisers.Restructure, T, U <: Number}
-    f.u0 + (t - f.t0) * first(f.chain(θ)(adapt(parameterless_type(θ), [t])))
+    println("Georgios is here; ODEPhi last")
+    println(t)
+    println(f.t0)
+    println(f.u0)
+
+    f.u0 + (t - f.t0[1]) * first(f.chain(θ)(adapt(parameterless_type(θ), [t, f.t0[2:end]])))
 end
 
 function (f::ODEPhi{C, T, U})(t::AbstractVector,
                               θ) where {C <: Optimisers.Restructure, T, U <: Number}
-    f.u0 .+ (t' .- f.t0) .* f.chain(θ)(adapt(parameterless_type(θ), t'))
+    # println("Georgios is here; ODEPhi 1")
+    # println(t)
+    # println(θ)
+    # println(f.u0)
+    # println(f.t0)
+
+    
+    zetas = f.t0[2:end]
+    # repeat zetas for each row of t
+    zetas = repeat(zetas, 1, size(t, 1))
+    # println(zetas)
+    t_aug = vcat(t', zetas)
+
+    # println("Georgios is here; ODEPhi 2")
+    # println(t_aug)
+
+    f_t0 = Float32.(f.t0')
+
+    # println(adapt(parameterless_type(θ), t))
+    # println(adapt(parameterless_type(θ), t'))
+    # println(f.chain(θ)(adapt(parameterless_type(θ), t)))
+    # println(f.chain(θ)(adapt(parameterless_type(θ), t')))
+
+    f.u0 .+ (t_aug .- f_t0) .* f.chain(θ)(adapt(parameterless_type(θ), t_aug))
+end
+
+function (f::ODEPhi{C, T, U})(t::AbstractMatrix,
+    θ) where {C <: Optimisers.Restructure, T, U <: Number}
+println("Georgios is here; ODEPhi Matrix")
+println(t)
+println(θ)
+println(f.u0)
+println(f.t0)
+# println(adapt(parameterless_type(θ), t))
+# println(adapt(parameterless_type(θ), t'))
+# println(f.chain(θ)(adapt(parameterless_type(θ), t)))
+# println(f.chain(θ)(adapt(parameterless_type(θ), t')))
+
+f.u0 .+ (t' .- f.t0) .* f.chain(θ)(adapt(parameterless_type(θ), t'))
 end
 
 function (f::ODEPhi{C, T, U})(t::Number, θ) where {C <: Optimisers.Restructure, T, U}
-    f.u0 + (t - f.t0) * f.chain(θ)(adapt(parameterless_type(θ), [t]))
+    f.u0 + (t - f.t0) * f.chain(θ)(adapt(parameterless_type(θ), [t, ]))
 end
 
 function (f::ODEPhi{C, T, U})(t::AbstractVector,
                               θ) where {C <: Optimisers.Restructure, T, U}
+    println("Georgios is here; ODEPhi")
+    println(t)
+    println(θ)
+    println(f.u0)
+    println(f.t0)
+                          
     f.u0 .+ (t .- f.t0) .* f.chain(θ)(adapt(parameterless_type(θ), t'))
 end
 
@@ -384,7 +432,6 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
     println("Called function solve... (ode_solve)")
     n = 1 # number of wiener expansion terms
     u0 = prob.u0
-    u0_aug = [u0; zeros(n)]
     tspan = prob.tspan
     # Define the original drift and diffusion terms of the SDE
     f = prob.f
@@ -394,7 +441,8 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
     t0 = tspan[1]
 
     # generate the normal distribution
-    zetas = randn(n)
+    zetas = randn(Float32, n)
+    t0_aug = [t0 zetas]
 
     #hidden layer
     chain = alg.chain
@@ -409,7 +457,7 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
     init_params = alg.init_params
 
     if chain isa Lux.AbstractExplicitLayer || chain isa Flux.Chain
-        phi, init_params = generate_phi_θ(chain, t0, u0_aug, init_params)
+        phi, init_params = generate_phi_θ(chain, t0_aug, u0, init_params)
     else
         error("Only Lux.AbstractExplicitLayer and Flux.Chain neural networks are supported")
     end
@@ -420,7 +468,7 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
 
     try
         print("Computing phi...")
-        phi(t0, init_params)
+        phi(t0_aug, init_params)
     catch err
         if isa(err, DimensionMismatch)
             throw(DimensionMismatch("Dimensions of the initial u0 and chain should match"))
@@ -481,8 +529,10 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
         l < abstol
     end
 
+    print("Training... (ode_solve)")
     optprob = OptimizationProblem(optf, init_params)
     res = solve(optprob, opt; callback, maxiters, alg.kwargs...)
+    print(res.u)
 
     #solutions at timepoints
     if saveat isa Number

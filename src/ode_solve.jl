@@ -1,4 +1,5 @@
 using DiffEqBase
+using Flux
 abstract type AbstractTrainingStrategy end
 
 abstract type NeuralPDEAlgorithm <: DiffEqBase.AbstractSDEAlgorithm end
@@ -136,6 +137,9 @@ end
 
 function generate_phi_θ(chain::Flux.Chain, t, u0, init_params::Nothing)
     θ, re = Flux.destructure(chain)
+    print("Georgios is here")
+    print(u0)
+    print(θ)
     ODEPhi(re, t, u0), θ
 end
 
@@ -229,12 +233,12 @@ Simple L2 inner loss at a time `t` with parameters θ
 """
 function inner_loss end
 
-function inner_loss(phi::ODEPhi{C, T, U}, f, autodiff::Bool, t::Number, θ,
+function inner_loss(phi::ODEPhi{C, T, U}, f, g, autodiff::Bool, t::Number, θ,
                     p) where {C, T, U <: Number}
     sum(abs2, ode_dfdx(phi, t, θ, autodiff) - f(phi(t, θ), p, t))
 end
 
-function inner_loss(phi::ODEPhi{C, T, U}, f, autodiff::Bool, t::AbstractVector, θ,
+function inner_loss(phi::ODEPhi{C, T, U}, f, g, autodiff::Bool, t::AbstractVector, θ,
                     p) where {C, T, U <: Number}
     out = phi(t, θ)
     fs = reduce(hcat, [f(out[i], p, t[i]) for i in 1:size(out, 2)])
@@ -242,12 +246,12 @@ function inner_loss(phi::ODEPhi{C, T, U}, f, autodiff::Bool, t::AbstractVector, 
     sum(abs2, dxdtguess .- fs) / length(t)
 end
 
-function inner_loss(phi::ODEPhi{C, T, U}, f, autodiff::Bool, t::Number, θ,
+function inner_loss(phi::ODEPhi{C, T, U}, f, g, autodiff::Bool, t::Number, θ,
                     p) where {C, T, U}
     sum(abs2, ode_dfdx(phi, t, θ, autodiff) .- f(phi(t, θ), p, t))
 end
 
-function inner_loss(phi::ODEPhi{C, T, U}, f, autodiff::Bool, t::AbstractVector, θ,
+function inner_loss(phi::ODEPhi{C, T, U}, f, g, autodiff::Bool, t::AbstractVector, θ,
                     p) where {C, T, U}
     out = Array(phi(t, θ))
     arrt = Array(t)
@@ -259,10 +263,10 @@ end
 """
 Representation of the loss function, parametric on the training strategy `strategy`
 """
-function generate_loss(strategy::QuadratureTraining, phi, f, autodiff::Bool, tspan, p,
+function generate_loss(strategy::QuadratureTraining, phi, f, g, autodiff::Bool, tspan, p,
                        batch)
-    integrand(t::Number, θ) = abs2(inner_loss(phi, f, autodiff, t, θ, p))
-    integrand(ts, θ) = [abs2(inner_loss(phi, f, autodiff, t, θ, p)) for t in ts]
+    integrand(t::Number, θ) = abs2(inner_loss(phi, f, g, autodiff, t, θ, p))
+    integrand(ts, θ) = [abs2(inner_loss(phi, f, g, autodiff, t, θ, p)) for t in ts]
     @assert batch == 0 # not implemented
 
     function loss(θ, _)
@@ -274,36 +278,36 @@ function generate_loss(strategy::QuadratureTraining, phi, f, autodiff::Bool, tsp
     return loss
 end
 
-function generate_loss(strategy::GridTraining, phi, f, autodiff::Bool, tspan, p, batch)
+function generate_loss(strategy::GridTraining, phi, f, g, autodiff::Bool, tspan, p, batch)
     ts = tspan[1]:(strategy.dx):tspan[2]
 
     # sum(abs2,inner_loss(t,θ) for t in ts) but Zygote generators are broken
     function loss(θ, _)
         if batch
-            sum(abs2, inner_loss(phi, f, autodiff, ts, θ, p))
+            sum(abs2, inner_loss(phi, f, g, autodiff, ts, θ, p))
         else
-            sum(abs2, [inner_loss(phi, f, autodiff, t, θ, p) for t in ts])
+            sum(abs2, [inner_loss(phi, f, g, autodiff, t, θ, p) for t in ts])
         end
     end
     return loss
 end
 
-function generate_loss(strategy::StochasticTraining, phi, f, autodiff::Bool, tspan, p,
+function generate_loss(strategy::StochasticTraining, phi, f, g, autodiff::Bool, tspan, p,
                        batch)
     # sum(abs2,inner_loss(t,θ) for t in ts) but Zygote generators are broken
     function loss(θ, _)
         ts = adapt(parameterless_type(θ),
                    [(tspan[2] - tspan[1]) * rand() + tspan[1] for i in 1:(strategy.points)])
         if batch
-            sum(abs2, inner_loss(phi, f, autodiff, ts, θ, p))
+            sum(abs2, inner_loss(phi, f, g, autodiff, ts, θ, p))
         else
-            sum(abs2, [inner_loss(phi, f, autodiff, t, θ, p) for t in ts])
+            sum(abs2, [inner_loss(phi, f, g, autodiff, t, θ, p) for t in ts])
         end
     end
     return loss
 end
 
-function generate_loss(strategy::WeightedIntervalTraining, phi, f, autodiff::Bool, tspan, p,
+function generate_loss(strategy::WeightedIntervalTraining, phi, f, g, autodiff::Bool, tspan, p,
                        batch)
     minT = tspan[1]
     maxT = tspan[2]
@@ -326,15 +330,15 @@ function generate_loss(strategy::WeightedIntervalTraining, phi, f, autodiff::Boo
 
     function loss(θ, _)
         if batch
-            sum(abs2, inner_loss(phi, f, autodiff, ts, θ, p))
+            sum(abs2, inner_loss(phi, f, g, autodiff, ts, θ, p))
         else
-            sum(abs2, [inner_loss(phi, f, autodiff, t, θ, p) for t in ts])
+            sum(abs2, [inner_loss(phi, f, g, autodiff, t, θ, p) for t in ts])
         end
     end
     return loss
 end
 
-function generate_loss(strategy::QuasiRandomTraining, phi, f, autodiff::Bool, tspan)
+function generate_loss(strategy::QuasiRandomTraining, phi, f, g, autodiff::Bool, tspan)
     error("QuasiRandomTraining is not supported by NNODE since it's for high dimensional spaces only. Use StochasticTraining instead.")
 end
 
@@ -378,8 +382,9 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
                             saveat = nothing,
                             maxiters = nothing)
     println("Called function solve... (ode_solve)")
-    n = 1
+    n = 1 # number of wiener expansion terms
     u0 = prob.u0
+    u0_aug = [u0; zeros(n)]
     tspan = prob.tspan
     # Define the original drift and diffusion terms of the SDE
     f = prob.f
@@ -404,7 +409,7 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
     init_params = alg.init_params
 
     if chain isa Lux.AbstractExplicitLayer || chain isa Flux.Chain
-        phi, init_params = generate_phi_θ(chain, t0, u0, init_params)
+        phi, init_params = generate_phi_θ(chain, t0, u0_aug, init_params)
     else
         error("Only Lux.AbstractExplicitLayer and Flux.Chain neural networks are supported")
     end
@@ -447,7 +452,7 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
         alg.batch
     end
 
-    inner_f = generate_loss(strategy, phi, f, autodiff, tspan, p, batch)
+    inner_f = generate_loss(strategy, phi, f, g, autodiff, tspan, p, batch)
     additional_loss = alg.additional_loss
 
     # Creates OptimizationFunction Object from total_loss

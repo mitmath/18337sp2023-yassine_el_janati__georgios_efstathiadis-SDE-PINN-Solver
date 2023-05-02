@@ -178,57 +178,20 @@ end
 
 function (f::ODEPhi{C, T, U})(t::Number,
                               θ) where {C <: Optimisers.Restructure, T, U <: Number}
-    println("Georgios is here; ODEPhi last")
-    println(t)
-    println(f.t0)
-    println(f.u0)
-
-    println(first(f.chain(θ)(adapt(parameterless_type(θ), [t, f.t0[2:end]]))))
-    # here
-
-    f.u0 + (t - f.t0[1]) * first(f.chain(θ)(adapt(parameterless_type(θ), [t, f.t0[2:end]])))
+    f.u0 + (t - f.t0[1]) * first(f.chain(θ)(adapt(parameterless_type(θ), vcat(t, f.t0[2:end]))))
 end
 
 function (f::ODEPhi{C, T, U})(t::AbstractVector,
                               θ) where {C <: Optimisers.Restructure, T, U <: Number}
-    # println("Georgios is here; ODEPhi 1")
-    # println(t)
-    # println(θ)
-    # println(f.u0)
-    # println(f.t0)
-
-
     zetas = f.t0[2:end]
     # repeat zetas for each row of t
     zetas = repeat(zetas, 1, size(t, 1))
-    # println(zetas)
-    t_aug = vcat(t', zetas)
-
-    # println("Georgios is here; ODEPhi 2")
-    # println(t_aug)
-
-    f_t0 = Float32.(f.t0')
-
-    # println(adapt(parameterless_type(θ), t))
-    # println(adapt(parameterless_type(θ), t'))
-    # println(f.chain(θ)(adapt(parameterless_type(θ), t)))
-    # println(f.chain(θ)(adapt(parameterless_type(θ), t')))
 
     f.u0 .+ (t' .- f.t0[1]) .* f.chain(θ)(adapt(parameterless_type(θ), vcat(t', zetas)))
 end
 
 function (f::ODEPhi{C, T, U})(t::AbstractMatrix,
     θ) where {C <: Optimisers.Restructure, T, U <: Number}
-    println("Georgios is here; ODEPhi Matrix")
-    println(t)
-    println(θ)
-    println(f.u0)
-    println(f.t0)
-    # println(adapt(parameterless_type(θ), t))
-    # println(adapt(parameterless_type(θ), t'))
-    # println(f.chain(θ)(adapt(parameterless_type(θ), t)))
-    # println(f.chain(θ)(adapt(parameterless_type(θ), t')))
-
     f.u0 .+ (t[1] - f.t0[1]) .* f.chain(θ)(adapt(parameterless_type(θ), t'))
 end
 
@@ -238,12 +201,7 @@ end
 
 function (f::ODEPhi{C, T, U})(t::AbstractVector,
                               θ) where {C <: Optimisers.Restructure, T, U}
-    println("Georgios is here; ODEPhi")
-    println(t)
-    println(θ)
-    println(f.u0)
-    println(f.t0)
-                          
+
     f.u0 .+ (t .- f.t0) .* f.chain(θ)(adapt(parameterless_type(θ), t'))
 end
 

@@ -242,32 +242,47 @@ Simple L2 inner loss at a time `t` with parameters θ
 """
 function inner_loss end
 
-function inner_loss(phi::ODEPhi{C, T, U}, f, g, autodiff::Bool, t::Number, θ,
-                    p) where {C, T, U <: Number}
-    sum(abs2, ode_dfdx(phi, t, θ, autodiff) - f(phi(t, θ), p, t))
-end
+# function inner_loss(phi::ODEPhi{C, T, U}, f, g, autodiff::Bool, t::Number, θ,
+#                     p) where {C, T, U <: Number}
+#     println("inner_loss 1; t number = $t;")
+#     sum(abs2, ode_dfdx(phi, t, θ, autodiff) - f(phi(t, θ), p, t))
+# end
 
 function inner_loss(phi::ODEPhi{C, T, U}, f, g, autodiff::Bool, t::AbstractVector, θ,
                     p) where {C, T, U <: Number}
+
+
+    zetas = phi.t0[2:end]
+    # print("zetas = $zetas;")
+    # println("inner_loss 2; t number = $t;")
     out = phi(t, θ)
+    # println("out = $out;")
     fs = reduce(hcat, [f(out[i], p, t[i]) for i in 1:size(out, 2)])
+    # println("fs = $fs;")
+    gs = reduce(hcat, [g(out[i], p, t[i]) for i in 1:size(out, 2)])
+    # println("gs = $gs;")
+    dwdtguess = ∂W_∂t.(t, Ref(zetas))
+    # println("dwdtguess = $dwdtguess;")
     dxdtguess = Array(ode_dfdx(phi, t, θ, autodiff))
-    sum(abs2, dxdtguess .- fs) / length(t)
+    # println("dxdtguess = $dxdtguess;")
+    sum(abs2, dxdtguess .- fs .+ gs .* dwdtguess) / length(t)
 end
 
-function inner_loss(phi::ODEPhi{C, T, U}, f, g, autodiff::Bool, t::Number, θ,
-                    p) where {C, T, U}
-    sum(abs2, ode_dfdx(phi, t, θ, autodiff) .- f(phi(t, θ), p, t))
-end
+# function inner_loss(phi::ODEPhi{C, T, U}, f, g, autodiff::Bool, t::Number, θ,
+#                     p) where {C, T, U}
+#     println("inner_loss 3; t number = $t;")
+#     sum(abs2, ode_dfdx(phi, t, θ, autodiff) .- f(phi(t, θ), p, t))
+# end
 
-function inner_loss(phi::ODEPhi{C, T, U}, f, g, autodiff::Bool, t::AbstractVector, θ,
-                    p) where {C, T, U}
-    out = Array(phi(t, θ))
-    arrt = Array(t)
-    fs = reduce(hcat, [f(out[:, i], p, arrt[i]) for i in 1:size(out, 2)])
-    dxdtguess = Array(ode_dfdx(phi, t, θ, autodiff))
-    sum(abs2, dxdtguess .- fs) / length(t)
-end
+# function inner_loss(phi::ODEPhi{C, T, U}, f, g, autodiff::Bool, t::AbstractVector, θ,
+#                     p) where {C, T, U}
+#     println("inner_loss 4; t number = $t;")
+#     out = Array(phi(t, θ))
+#     arrt = Array(t)
+#     fs = reduce(hcat, [f(out[:, i], p, arrt[i]) for i in 1:size(out, 2)])
+#     dxdtguess = Array(ode_dfdx(phi, t, θ, autodiff))
+#     sum(abs2, dxdtguess .- fs) / length(t)
+# end
 
 """
 Representation of the loss function, parametric on the training strategy `strategy`

@@ -183,6 +183,9 @@ function (f::ODEPhi{C, T, U})(t::Number,
     println(f.t0)
     println(f.u0)
 
+    println(first(f.chain(θ)(adapt(parameterless_type(θ), [t, f.t0[2:end]]))))
+    # here
+
     f.u0 + (t - f.t0[1]) * first(f.chain(θ)(adapt(parameterless_type(θ), [t, f.t0[2:end]])))
 end
 
@@ -194,7 +197,7 @@ function (f::ODEPhi{C, T, U})(t::AbstractVector,
     # println(f.u0)
     # println(f.t0)
 
-    
+
     zetas = f.t0[2:end]
     # repeat zetas for each row of t
     zetas = repeat(zetas, 1, size(t, 1))
@@ -211,22 +214,22 @@ function (f::ODEPhi{C, T, U})(t::AbstractVector,
     # println(f.chain(θ)(adapt(parameterless_type(θ), t)))
     # println(f.chain(θ)(adapt(parameterless_type(θ), t')))
 
-    f.u0 .+ (t_aug .- f_t0) .* f.chain(θ)(adapt(parameterless_type(θ), t_aug))
+    f.u0 .+ (t' .- f.t0[1]) .* f.chain(θ)(adapt(parameterless_type(θ), vcat(t', zetas)))
 end
 
 function (f::ODEPhi{C, T, U})(t::AbstractMatrix,
     θ) where {C <: Optimisers.Restructure, T, U <: Number}
-println("Georgios is here; ODEPhi Matrix")
-println(t)
-println(θ)
-println(f.u0)
-println(f.t0)
-# println(adapt(parameterless_type(θ), t))
-# println(adapt(parameterless_type(θ), t'))
-# println(f.chain(θ)(adapt(parameterless_type(θ), t)))
-# println(f.chain(θ)(adapt(parameterless_type(θ), t')))
+    println("Georgios is here; ODEPhi Matrix")
+    println(t)
+    println(θ)
+    println(f.u0)
+    println(f.t0)
+    # println(adapt(parameterless_type(θ), t))
+    # println(adapt(parameterless_type(θ), t'))
+    # println(f.chain(θ)(adapt(parameterless_type(θ), t)))
+    # println(f.chain(θ)(adapt(parameterless_type(θ), t')))
 
-f.u0 .+ (t' .- f.t0) .* f.chain(θ)(adapt(parameterless_type(θ), t'))
+    f.u0 .+ (t[1] - f.t0[1]) .* f.chain(θ)(adapt(parameterless_type(θ), t'))
 end
 
 function (f::ODEPhi{C, T, U})(t::Number, θ) where {C <: Optimisers.Restructure, T, U}

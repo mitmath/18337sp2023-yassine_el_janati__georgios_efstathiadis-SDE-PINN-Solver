@@ -1,0 +1,31 @@
+# Stochastic equation - black scholes
+mu = 1/10
+sigma = 1/20
+
+t_length=500
+t = range(0, 1, length = t_length)
+dt=1.0f0/t_length
+
+f = (u, p, t) -> mu * u
+g = (u, p, t) -> sigma * u
+tspan = (0.0f0, 1.0f0)
+u0 = 0.5f0
+prob = SDEProblem(f, g, u0, tspan)
+# chain = Flux.Chain(Dense(1, 25, σ), Dense(25, 75, σ), Dense(75, 150, σ), Dense(150, 1))
+chain = Chain(
+    Dense(1, 25, σ),
+    Dropout(0.2),
+    Dense(25, 75, σ),
+    Dropout(0.2),
+    Dense(75, 150, σ),
+    Dropout(0.2),
+    Dense(150, 1)
+)
+# luxchain = Lux.Chain(Lux.Dense(1, 5, Lux.σ), Lux.Dense(5, 1))
+opt = OptimizationOptimisers.Adam(0.005, (0.9, 0.95))
+
+sol = solve(prob, NNODE(chain, opt, autodiff=false), dt = dt, verbose = true,
+            abstol = 1.0f-3, maxiters = 5000)
+
+# analytic solution
+u(t) = 0.5*exp((mu - 0.5 * sigma ^ 2) * t + sigma * sqrt(dt) * randn())

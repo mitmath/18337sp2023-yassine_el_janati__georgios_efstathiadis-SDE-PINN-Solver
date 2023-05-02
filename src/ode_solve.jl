@@ -378,6 +378,7 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
                             saveat = nothing,
                             maxiters = nothing)
     println("Called function solve... (ode_solve)")
+    n = 1
     u0 = prob.u0
     tspan = prob.tspan
     # Define the original drift and diffusion terms of the SDE
@@ -388,7 +389,7 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
     t0 = tspan[1]
 
     # generate the normal distribution
-    zetas = randn(p.n)
+    zetas = randn(n)
 
     #hidden layer
     chain = alg.chain
@@ -396,7 +397,7 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
     autodiff = alg.autodiff
 
     # change the input dim for the chain
-    layer1 = Dense(1 + p.n, length(chain.layers[1].bias), chain.layers[1].σ)
+    layer1 = Dense(1 + n, length(chain.layers[1].bias), chain.layers[1].σ)
     chain = Chain(layer1, chain.layers[2:end]...)
 
     #train points generation

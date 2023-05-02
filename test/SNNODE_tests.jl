@@ -31,27 +31,124 @@ using Plots
 
 
 # Stochastic equation - black scholes
-mu = 1.5
-sigma = 2
+mu = 3
+sigma = 1/2
+
+t_length=500
+t = range(0, 1, length = t_length)
+dt=1.0f0/t_length
+
 f = (u, p, t) -> mu * u
 g = (u, p, t) -> sigma * u
 tspan = (0.0f0, 1.0f0)
-u0 = 1.0f0
+u0 = 0.5f0
 prob = SDEProblem(f, g, u0, tspan)
-chain = Flux.Chain(Dense(1, 25, σ), Dense(25, 75, σ), Dense(75, 150, σ), Dense(150, 1))
+# chain = Flux.Chain(Dense(1, 25, σ), Dense(25, 75, σ), Dense(75, 150, σ), Dense(150, 1))
+chain = Chain(
+    Dense(1, 25, σ),
+    Dropout(0.2),
+    Dense(25, 75, σ),
+    Dropout(0.2),
+    Dense(75, 150, σ),
+    Dropout(0.2),
+    Dense(150, 1)
+)
 # luxchain = Lux.Chain(Lux.Dense(1, 5, Lux.σ), Lux.Dense(5, 1))
-opt = OptimizationOptimisers.Adam(0.01, (0.9, 0.95))
+opt = OptimizationOptimisers.Adam(0.5, (0.9, 0.95))
 
-sol = solve(prob, NNODE(chain, opt, autodiff=false), dt = 1 / 20.0f0, verbose = true,
-            abstol = 1.0f-10, maxiters = 10000)
+sol = solve(prob, NNODE(chain, opt, autodiff=false), dt = dt, verbose = true,
+            abstol = 1.0f-3, maxiters = 5000)
 
 # analytic solution
-dt=1/100.0f0
-u(t) = exp((mu - 0.5 * sigma ^ 2) * t + sigma * sqrt(dt) * randn())
-t = range(0, 1, length = 100)
+u(t) = 0.5*exp((mu - 0.5 * sigma ^ 2) * t + sigma * sqrt(dt) * randn())
 
 # plot solution
+plot(t, u.(t), label = "analytic")
+plot!(sol, vars = (0, 1), label = "NNODE")
+
+# Stochastic equation 2 - example 2 
+# alpha = 1/10
+# beta = 1/20
+
+# t_length=100
+# t = range(0, 1, length = t_length)
+# dt=1.0f0/t_length
+
+# f = (u, p, t) -> -(alpha^2)*sin(u)*(cos(u))^3
+# g = (u, p, t) -> alpha*(cos(u))^2
+# tspan = (0.0f0, 1.0f0)
+# u0 = 0.5f0
+# prob = SDEProblem(f, g, u0, tspan)
+# # chain = Flux.Chain(Dense(1, 25, σ), Dense(25, 75, σ), Dense(75, 150, σ), Dense(150, 1))
+# chain = Chain(
+#     Dense(1, 25, σ),
+#     Dropout(0.2),
+#     Dense(25, 75, σ),
+#     Dropout(0.2),
+#     Dense(75, 150, σ),
+#     Dropout(0.2),
+#     Dense(150, 1)
+# )
+# # luxchain = Lux.Chain(Lux.Dense(1, 5, Lux.σ), Lux.Dense(5, 1))
+# opt = OptimizationOptimisers.Adam(0.005, (0.9, 0.95))
+
+# sol = solve(prob, NNODE(chain, opt, autodiff=false), dt = dt, verbose = true,
+#             abstol = 1.0f-3, maxiters = 5000)
+
+# # analytic solution
+# u(t) = atan(alpha*sqrt(dt)*randn()+tan(u0))
+
+# # plot solution
+# plot(t, u.(t), label = "", color = "green", alpha=0.05)
+
+# for i in 1:100
+#     u(t) = atan(alpha*sqrt(dt)*randn()+tan(u0))
+#     plot!(t, u.(t), label = "", color = "green", alpha = 0.05)
+# end
+# plot!(sol, vars = (0, 1), label = "NNODE", color="red")
 
 
-plot(sol, vars = (0, 1), label = "NNODE")
-plot!(t, u.(t), label = "analytic")
+# # Stochastic equation 2 - example 3
+# alpha = 1/10
+# beta = 1/20
+
+# t_length=100
+# t = range(0, 1, length = t_length)
+# dt=1.0f0/t_length
+
+# f = (u, p, t) -> (beta/sqrt(1+t)-u/(2*(1+t)))
+# g = (u, p, t) -> alpha*beta/sqrt(1+t)
+# tspan = (0.0f0, 1.0f0)
+# u0 = 0.5f0
+# prob = SDEProblem(f, g, u0, tspan)
+# # chain = Flux.Chain(Dense(1, 25, σ), Dense(25, 75, σ), Dense(75, 150, σ), Dense(150, 1))
+# chain = Chain(
+#     Dense(1, 25, σ),
+#     Dropout(0.2),
+#     Dense(25, 75, σ),
+#     Dropout(0.2),
+#     Dense(75, 150, σ),
+#     Dropout(0.2),
+#     Dense(150, 1)
+# )
+# # luxchain = Lux.Chain(Lux.Dense(1, 5, Lux.σ), Lux.Dense(5, 1))
+# opt = OptimizationOptimisers.Adam(0.005, (0.9, 0.95))
+
+# sol = solve(prob, NNODE(chain, opt, autodiff=false), dt = dt, verbose = true,
+#             abstol = 1.0f-3, maxiters = 5000)
+
+# # analytic solution
+# u(t) = u0/(sqrt(1+t))+beta*(t+alpha*sqrt(dt)*randn())/sqrt(1+t)
+
+# # plot solution
+# plot(t, u.(t), label = "", color = "green", alpha=0.05)
+
+# for i in 1:100
+#     u(t) = u0/(sqrt(1+t))+beta*(t+alpha*sqrt(dt)*randn())/sqrt(1+t)
+#     plot!(t, u.(t), label = "", color = "green", alpha = 0.05)
+# end
+# plot!()
+# plot!(sol, vars = (0, 1), label = "NNODE", color="red")
+
+
+# plot(sol, idxs = (0, 1))

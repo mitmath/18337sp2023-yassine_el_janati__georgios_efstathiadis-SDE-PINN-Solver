@@ -137,7 +137,7 @@ end
 
 function generate_phi_θ(chain::Flux.Chain, t, u0, init_params::Nothing)
     θ, re = Flux.destructure(chain)
-    print("Georgios is here")
+    # println("Georgios is here")
     ODEPhi(re, t, u0), θ
 end
 
@@ -264,7 +264,7 @@ function inner_loss(phi::ODEPhi{C, T, U}, f, g, autodiff::Bool, t::AbstractVecto
     # println("dwdtguess = $dwdtguess;")
     dxdtguess = Array(ode_dfdx(phi, t, θ, autodiff))
     # println("dxdtguess = $dxdtguess;")
-    sum(abs2, dxdtguess .- fs .- gs .* dwdtguess) / length(t)
+    sum(abs2, dxdtguess .- (fs .+ (gs .* dwdtguess))) / length(t)
 end
 
 # function inner_loss(phi::ODEPhi{C, T, U}, f, g, autodiff::Bool, t::Number, θ,
@@ -405,7 +405,7 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
                             saveat = nothing,
                             maxiters = nothing)
     println("Called function solve... (ode_solve)")
-    n = 5 # number of wiener expansion terms
+    n = 16 # number of wiener expansion terms
     u0 = prob.u0
     tspan = prob.tspan
     # Define the original drift and diffusion terms of the SDE
@@ -442,7 +442,7 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
     end
 
     try
-        print("Computing phi...")
+        println("Computing phi...")
         phi(t0_aug, init_params)
     catch err
         if isa(err, DimensionMismatch)
@@ -504,7 +504,7 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
         l < abstol
     end
 
-    print("Training... (ode_solve)")
+    println("Training... (ode_solve)")
     optprob = OptimizationProblem(optf, init_params)
     res = solve(optprob, opt; callback, maxiters, alg.kwargs...)
 

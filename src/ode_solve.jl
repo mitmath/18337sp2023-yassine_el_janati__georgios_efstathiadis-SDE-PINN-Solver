@@ -138,7 +138,6 @@ end
 function generate_phi_θ(chain::Flux.Chain, t, u0, init_params::Nothing)
     θ, re = Flux.destructure(chain)
     print("Georgios is here")
-    print(u0)
     ODEPhi(re, t, u0), θ
 end
 
@@ -265,7 +264,7 @@ function inner_loss(phi::ODEPhi{C, T, U}, f, g, autodiff::Bool, t::AbstractVecto
     # println("dwdtguess = $dwdtguess;")
     dxdtguess = Array(ode_dfdx(phi, t, θ, autodiff))
     # println("dxdtguess = $dxdtguess;")
-    sum(abs2, dxdtguess .- fs .+ gs .* dwdtguess) / length(t)
+    sum(abs2, dxdtguess .- fs .- gs .* dwdtguess) / length(t)
 end
 
 # function inner_loss(phi::ODEPhi{C, T, U}, f, g, autodiff::Bool, t::Number, θ,
@@ -386,11 +385,11 @@ end
 SciMLBase.interp_summary(::NNODEInterpolation) = "Trained neural network interpolation"
 
 function W(t, zetas)
-    sqrt(2) * sum(zetas[k] * sin((k - 1/2) * π * t) / (k - 1/2 * π)  for k in 1:length(zetas))
+    sqrt(2) * sum(zetas[k] * sin((k - 1/2) * π * t) / ((k - 1/2) * π)  for k in 1:length(zetas))
 end
 
 function ∂W_∂t(t, zetas)
-    sqrt(2) * sum(zetas[k] * cos((k - 1/2) * π * t) * (k - 1/2) * π / (k - 1/2 * π)  for k in 1:length(zetas))
+    sqrt(2) * sum(zetas[k] * cos((k - 1/2) * π * t) for k in 1:length(zetas))
 end
 
 function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
@@ -406,7 +405,7 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
                             saveat = nothing,
                             maxiters = nothing)
     println("Called function solve... (ode_solve)")
-    n = 1 # number of wiener expansion terms
+    n = 5 # number of wiener expansion terms
     u0 = prob.u0
     tspan = prob.tspan
     # Define the original drift and diffusion terms of the SDE
@@ -418,7 +417,7 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
 
     # generate the normal distribution
     zetas = randn(Float32, n)
-    t0_aug = [t0 zetas]
+    t0_aug = Float32.(hcat(t0, zetas'))
 
     #hidden layer
     chain = alg.chain
@@ -508,7 +507,6 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
     print("Training... (ode_solve)")
     optprob = OptimizationProblem(optf, init_params)
     res = solve(optprob, opt; callback, maxiters, alg.kwargs...)
-    print(res.u)
 
     #solutions at timepoints
     if saveat isa Number

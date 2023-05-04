@@ -154,11 +154,11 @@ using Plots
 # plot(sol, idxs = (0, 1))
 
 # Stochastic equation - Ornstein-Uhlenbeck Process
-theta = 1/10
+theta = 2.5
 mu = 1/20
 sigma = 1/20
 
-t_length=100
+t_length=25
 t = range(0, 1, length = t_length)
 dt=1.0f0/t_length
 
@@ -170,19 +170,19 @@ prob = SDEProblem(f, g, u0, tspan)
 # chain = Flux.Chain(Dense(1, 25, σ), Dense(25, 75, σ), Dense(75, 150, σ), Dense(150, 1))
 chain = Chain(
     Dense(1, 25, σ),
-    Dropout(0.2),
-    Dense(25, 75, σ),
-    Dropout(0.2),
-    Dense(75, 1)
+    # Dropout(0.2),
+    # Dense(25, 75, σ),
+    # Dropout(0.2),
+    Dense(25, 1)
 )
-# opt = OptimizationOptimisers.Adam(0.00005, (0.9, 0.95))
+opt = OptimizationOptimisers.Adam(0.001, (0.9, 0.95))
 # try other optimizers
-opt = OptimizationOptimisers.RMSProp(0.0005)
+# opt = OptimizationOptimisers.RMSProp(0.0005)
 
 nnode = NNODE(chain, opt, autodiff=false)
 
 sol = solve(prob, nnode, dt = dt, verbose = true,
-            abstol = 0.1, maxiters = 2000)
+            abstol = 0.1, maxiters = 5000)
 
 # analytic solution
 # u(t) = mu+(u0-mu)*exp(-theta*t)+sigma*sqrt(1-exp(-2*theta*t))*randn()
@@ -197,4 +197,4 @@ for i in 1:100
 end
 plot!(sol, vars = (0, 1), label = "NNODE", color="red")
 # save the plot
-savefig("ou_fit.png")
+savefig("test_sdes/ou_fit2.png")

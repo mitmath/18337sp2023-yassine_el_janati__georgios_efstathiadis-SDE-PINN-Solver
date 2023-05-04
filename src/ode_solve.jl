@@ -405,7 +405,7 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
                             saveat = nothing,
                             maxiters = nothing)
     println("Called function solve... (ode_solve)")
-    n = 16 # number of wiener expansion terms
+    n = 4 # number of wiener expansion terms
     u0 = prob.u0
     tspan = prob.tspan
     # Define the original drift and diffusion terms of the SDE

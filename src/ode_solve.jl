@@ -148,6 +148,7 @@ end
 
 function (f::ODEPhi{C, T, U})(t::Number,
                               θ) where {C <: Lux.AbstractExplicitLayer, T, U <: Number}
+    println("f::ODEPhi9 here!")
     y, st = f.chain(adapt(parameterless_type(ComponentArrays.getdata(θ)), [t]), θ, f.st)
     ChainRulesCore.@ignore_derivatives f.st = st
     f.u0 + (t - f.t0) * first(y)
@@ -156,12 +157,14 @@ end
 function (f::ODEPhi{C, T, U})(t::AbstractVector,
                               θ) where {C <: Lux.AbstractExplicitLayer, T, U <: Number}
     # Batch via data as row vectors
+    println("f::ODEPhi8 here!")
     y, st = f.chain(adapt(parameterless_type(ComponentArrays.getdata(θ)), t'), θ, f.st)
     ChainRulesCore.@ignore_derivatives f.st = st
     f.u0 .+ (t' .- f.t0) .* y
 end
 
 function (f::ODEPhi{C, T, U})(t::Number, θ) where {C <: Lux.AbstractExplicitLayer, T, U}
+    println("f::ODEPhi7 here!")
     y, st = f.chain(adapt(parameterless_type(ComponentArrays.getdata(θ)), [t]), θ, f.st)
     ChainRulesCore.@ignore_derivatives f.st = st
     f.u0 .+ (t .- f.t0) .* y
@@ -170,37 +173,45 @@ end
 function (f::ODEPhi{C, T, U})(t::AbstractVector,
                               θ) where {C <: Lux.AbstractExplicitLayer, T, U}
     # Batch via data as row vectors
+    println("f::ODEPhi6 here!")
+
     y, st = f.chain(adapt(parameterless_type(ComponentArrays.getdata(θ)), t'), θ, f.st)
     ChainRulesCore.@ignore_derivatives f.st = st
     f.u0 .+ (t' .- f.t0) .* y
 end
 
 function (f::ODEPhi{C, T, U})(t::Number,
-                              θ) where {C <: Optimisers.Restructure, T, U <: Number}
-    f.u0 + (t - f.t0[1]) * first(f.chain(θ)(adapt(parameterless_type(θ), vcat(t, f.t0[2:end]))))
+                              θ, zetas) where {C <: Optimisers.Restructure, T, U <: Number}
+    println("f::ODEPhi2 here!")
+    f.u0 + (t - f.t0[1]) * first(f.chain(θ)(adapt(parameterless_type(θ), vcat(t, zetas))))
 end
 
 function (f::ODEPhi{C, T, U})(t::AbstractVector,
-                              θ) where {C <: Optimisers.Restructure, T, U <: Number}
-    zetas = f.t0[2:end]
+                              θ, zetas) where {C <: Optimisers.Restructure, T, U <: Number}
+    # zetas = f.t0[2:end]
     # repeat zetas for each row of t
-    zetas = repeat(zetas, 1, size(t, 1))
+    zetas = repeat(zetas', 1, size(t, 1))
+    println("f::ODEPhi1 here!")
+    println("shape of zetas = $(size(zetas))")
+    println("shape of t = $(size(t))")
 
     f.u0 .+ (t' .- f.t0[1]) .* f.chain(θ)(adapt(parameterless_type(θ), vcat(t', zetas)))
 end
 
 function (f::ODEPhi{C, T, U})(t::AbstractMatrix,
     θ) where {C <: Optimisers.Restructure, T, U <: Number}
+    println("f::ODEPhi3 here!")
     f.u0 .+ (t[1] - f.t0[1]) .* f.chain(θ)(adapt(parameterless_type(θ), t'))
 end
 
 function (f::ODEPhi{C, T, U})(t::Number, θ) where {C <: Optimisers.Restructure, T, U}
+    println("f::ODEPhi4 here!")
     f.u0 + (t - f.t0) * f.chain(θ)(adapt(parameterless_type(θ), [t, ]))
 end
 
 function (f::ODEPhi{C, T, U})(t::AbstractVector,
                               θ) where {C <: Optimisers.Restructure, T, U}
-
+    println("f::ODEPhi5 here!")
     f.u0 .+ (t .- f.t0) .* f.chain(θ)(adapt(parameterless_type(θ), t'))
 end
 
@@ -228,11 +239,11 @@ function ode_dfdx(phi::ODEPhi{C, T, U}, t::Number, θ,
     end
 end
 
-function ode_dfdx(phi::ODEPhi, t::AbstractVector, θ, autodiff::Bool)
+function ode_dfdx(phi::ODEPhi, t::AbstractVector, θ, autodiff::Bool, zetas)
     if autodiff
-        ForwardDiff.jacobian(t -> phi(t, θ), t)
+        ForwardDiff.jacobian(t -> phi(t, θ, zetas), t)
     else
-        (phi(t .+ sqrt(eps(eltype(t))), θ) - phi(t, θ)) ./ sqrt(eps(eltype(t)))
+        (phi(t .+ sqrt(eps(eltype(t))), θ, zetas) - phi(t, θ, zetas)) ./ sqrt(eps(eltype(t)))
     end
 end
 
@@ -252,18 +263,34 @@ function inner_loss(phi::ODEPhi{C, T, U}, f, g, autodiff::Bool, t::AbstractVecto
 
 
     zetas = phi.t0[2:end]
-    # print("zetas = $zetas;")
-    # println("inner_loss 2; t number = $t;")
-    out = phi(t, θ)
+    zetas2 = phi.t0[2:end]
+    # experiment :)
+    zetas = Array(randn(Float32, length(zetas))')
+    zetas3 = copy(zetas)
+    println("inner_loss 2; t number = $t;")
+    out = phi(t, θ, copy(zetas))
     # println("out = $out;")
     fs = reduce(hcat, [f(out[i], p, t[i]) for i in 1:size(out, 2)])
-    # println("fs = $fs;")
+    println("fs = $fs;")
     gs = reduce(hcat, [g(out[i], p, t[i]) for i in 1:size(out, 2)])
-    # println("gs = $gs;")
-    dwdtguess = ∂W_∂t.(t, Ref(zetas))
-    # println("dwdtguess = $dwdtguess;")
-    dxdtguess = Array(ode_dfdx(phi, t, θ, autodiff))
-    # println("dxdtguess = $dxdtguess;")
+    println("gs = $gs;")
+    println("zetas = $(zetas');")
+    println("zetas2 =  $zetas2;")
+    # check shapes of zetas and zetas2
+    print("size(zetas) = $(size(zetas'));")
+    print("size(zetas2) = $(size(zetas2));")
+    dwdtguess = Array(∂W_∂t.(t, Ref(Array(zetas3')))')
+    println("dwdtguess = $dwdtguess;")
+    dxdtguess = Float64.(Array(ode_dfdx(phi, t, θ, autodiff, copy(zetas))))
+    println("dxdtguess = $dxdtguess;")
+    println("shape of fs = $(size(fs));")
+    println("type of fs = $(typeof(fs));")
+    println("shape of gs = $(size(gs));")
+    println("type of gs = $(typeof(gs));")
+    println("shape of dwdtguess = $(size(dwdtguess));")
+    println("type of dwdtguess = $(typeof(dwdtguess));")
+    println("shape of dxdtguess = $(size(dxdtguess));")
+    println("type of dxdtguess = $(typeof(dxdtguess));")
     sum(abs2, dxdtguess .- (fs .+ (gs .* dwdtguess))) / length(t)
 end
 
@@ -389,6 +416,9 @@ function W(t, zetas)
 end
 
 function ∂W_∂t(t, zetas)
+    println("∂W_∂t here!")
+    println("zetas = $(size(zetas));")
+    println("t = $(size(t));")
     sqrt(2) * sum(zetas[k] * cos((k - 1/2) * π * t) for k in 1:length(zetas))
 end
 
@@ -404,8 +434,8 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
                             verbose = false,
                             saveat = nothing,
                             maxiters = nothing)
-    println("Called function solve... (ode_solve)")
-    n = 4 # number of wiener expansion terms
+    println("Called function solve... (sde_solve)")
+    # n = 25 # number of wiener expansion terms
     u0 = prob.u0
     tspan = prob.tspan
     # Define the original drift and diffusion terms of the SDE
@@ -416,7 +446,9 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
     t0 = tspan[1]
 
     # generate the normal distribution
-    zetas = randn(Float32, n)
+    # zetas = randn(Float32, n)
+    zetas = p
+    n = length(zetas)
     t0_aug = Float32.(hcat(t0, zetas'))
 
     #hidden layer
@@ -504,7 +536,7 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
         l < abstol
     end
 
-    println("Training... (ode_solve)")
+    println("Training... (sde_solve)")
     optprob = OptimizationProblem(optf, init_params)
     res = solve(optprob, opt; callback, maxiters, alg.kwargs...)
 

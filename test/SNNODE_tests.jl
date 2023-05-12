@@ -153,6 +153,54 @@ using Plots
 
 # plot(sol, idxs = (0, 1))
 
+# # Stochastic equation - Ornstein-Uhlenbeck Process
+# theta = 2.5
+# mu = 1/20
+# sigma = 1/20
+
+# t_length=25
+# t = range(0, 1, length = t_length)
+# dt=1.0f0/t_length
+
+# f = (u, p, t) -> theta*(mu-u)
+# g = (u, p, t) ->  sigma
+# tspan = (0.0f0, 1.0f0)
+# u0 = 0.5f0
+# prob = SDEProblem(f, g, u0, tspan)
+# # chain = Flux.Chain(Dense(1, 25, σ), Dense(25, 75, σ), Dense(75, 150, σ), Dense(150, 1))
+# chain = Chain(
+#     Dense(1, 25, σ),
+#     # Dropout(0.2),
+#     # Dense(25, 75, σ),
+#     # Dropout(0.2),
+#     Dense(25, 1)
+# )
+# opt = OptimizationOptimisers.Adam(0.001, (0.9, 0.95))
+# # try other optimizers
+# # opt = OptimizationOptimisers.RMSProp(0.0005)
+
+# nnode = NNODE(chain, opt, autodiff=false)
+
+# sol = solve(prob, nnode, dt = dt, verbose = true,
+#             abstol = 0.0001, maxiters = 5000)
+
+# # analytic solution
+# # u(t) = mu+(u0-mu)*exp(-theta*t)+sigma*sqrt(1-exp(-2*theta*t))*randn()
+# u(t) = u0 * exp(-theta * t) + mu * (1 - exp.(-theta * t)) + sigma * exp(-theta * t) * randn()
+
+
+# # plot solution
+# plot(t, u.(t, w_t), label = "", color = "green", alpha=1)
+
+# # for i in 1:100
+# #     plot!(t, u.(t), label = "", color = "green", alpha = 0.1)
+# # end
+# plot!(sol, vars = (0, 1), label = "NNODE", color="red")
+# # save the plot
+# # savefig("test_sdes/ou_fit2.png")
+
+
+##################################### find hard convergence ##############################
 # Stochastic equation - Ornstein-Uhlenbeck Process
 theta = 2.5
 mu = 1/20
@@ -166,14 +214,18 @@ f = (u, p, t) -> theta*(mu-u)
 g = (u, p, t) ->  sigma
 tspan = (0.0f0, 1.0f0)
 u0 = 0.5f0
-prob = SDEProblem(f, g, u0, tspan)
+
+# create zeta coefficients - 1000
+zetas = randn(1000)
+
+prob = SDEProblem(f, g, u0, tspan, zetas[1:25])
 # chain = Flux.Chain(Dense(1, 25, σ), Dense(25, 75, σ), Dense(75, 150, σ), Dense(150, 1))
 chain = Chain(
-    Dense(1, 25, σ),
+    Dense(1, 50, σ),
     # Dropout(0.2),
     # Dense(25, 75, σ),
     # Dropout(0.2),
-    Dense(25, 1)
+    Dense(50, 1)
 )
 opt = OptimizationOptimisers.Adam(0.001, (0.9, 0.95))
 # try other optimizers
@@ -182,19 +234,32 @@ opt = OptimizationOptimisers.Adam(0.001, (0.9, 0.95))
 nnode = NNODE(chain, opt, autodiff=false)
 
 sol = solve(prob, nnode, dt = dt, verbose = true,
-            abstol = 0.1, maxiters = 5000)
-
-# analytic solution
-# u(t) = mu+(u0-mu)*exp(-theta*t)+sigma*sqrt(1-exp(-2*theta*t))*randn()
-u(t) = u0 * exp(-theta * t) + mu * (1 - exp.(-theta * t)) + sigma * exp(-theta * t) * randn()
+            abstol = 0.0001, maxiters = 5000)
 
 
-# plot solution
-plot(t, u.(t), label = "", color = "green", alpha=0.1)
+# u(t, w_t) = u0 * exp(-theta * t) + mu * (1 - exp.(-theta * t)) + sigma * exp(-theta * t) * w_t
+# # create w_t from zetas with KKL expansion
+# w_t = zeros(t_length)
+# for i in 1:t_length
+#     w_t[i] = sqrt(2) * sum(zetas[j] * sin((j-1/2) * π * t[i]) / ((j-1/2) * π) for j in 1:1000)
+# end
 
-for i in 1:100
-    plot!(t, u.(t), label = "", color = "green", alpha = 0.1)
-end
-plot!(sol, vars = (0, 1), label = "NNODE", color="red")
-# save the plot
-savefig("test_sdes/ou_fit2.png")
+# # plot solution
+# plot(t, u.(t, w_t), label = "", color = "green", alpha=1)
+
+# # for i in 1:100
+# #     plot!(t, u.(t), label = "", color = "green", alpha = 0.1)
+# # end
+# plot!(sol, vars = (0, 1), label = "NNODE", color="red")
+# # save the plot
+# savefig("test_sdes/ou_fit_hard_zetas25.png")
+
+
+
+# w_t_truncated = zeros(t_length)
+# for i in 1:t_length
+#     w_t_truncated[i] = sqrt(2) * sum(zetas[j] * sin((j-1/2) * π * t[i]) / ((j-1/2) * π) for j in 1:50)
+# end
+
+# plot(t, u.(t, w_t), label = "", color = "green", alpha=1)
+# plot!(t, u.(t, w_t_truncated), label = "", color = "blue", alpha=1)

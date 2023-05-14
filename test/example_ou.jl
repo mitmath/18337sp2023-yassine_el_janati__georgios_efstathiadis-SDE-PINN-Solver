@@ -31,7 +31,7 @@ opt = OptimizationOptimisers.Adam(0.001, (0.9, 0.95))
 nnode = NNODE(chain, opt, autodiff=false)
 
 sol = solve(prob, nnode, dt = dt, verbose = true,
-            abstol = 1.0f-2, maxiters = 5000)
+            abstol = 1.0f-4, maxiters = 5000)
 
 # analytic solution
 u(t) = u0 * exp(-theta * t) + mu * (1 - exp.(-theta * t)) + sigma * exp(-theta * t) * randn()

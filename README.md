@@ -21,7 +21,7 @@
     * [x] Example 1 | need more work for better results
     * [ ] Example 2
     * [ ] Example 3
-    * [x] Ornstein-Uhlenbeck Process | need more work for better results
+    * [x] Ornstein-Uhlenbeck Process
 
 
 

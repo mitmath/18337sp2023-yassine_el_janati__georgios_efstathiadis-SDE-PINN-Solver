@@ -7,10 +7,21 @@
   * [x] Debugged the network to handle the Wiener process; without actually adding any SDEs, the network can handle the Wiener process for ODE.
   * [x] Change the loss function to handle the Wiener process
 * [x] Test on SDEs to make sure it works (weak convergence)
-* [ ] Try replacing MLP with Siren networks
-* [ ] Make SDE PINN for strong convergence
-  * [ ] Fix W_t for a single instance - analytical solution and extract zetas from KKL expansion
-  * [ ] Feed the zetas to the (trained?) network
+* [-] Try replacing MLP with Siren networks
+* [-] Make SDE PINN for strong convergence
+  * [-] Fix W_t for a single instance - analytical solution and extract zetas from KKL expansion
+  * [-] Feed the zetas to the (trained?) network
+
+# Report
+
+  * [ ] PINN training and weak solution
+  * [x] debugging code for ode_solve
+  * [ ] conclusion
+  * [ ] results
+    * [x] Example 1 | need more work for better results
+    * [ ] Example 2
+    * [ ] Example 3
+    * [x] Ornstein-Uhlenbeck Process | need more work for better results
 
 
 

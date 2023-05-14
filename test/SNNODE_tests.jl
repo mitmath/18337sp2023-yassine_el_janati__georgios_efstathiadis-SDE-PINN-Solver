@@ -166,7 +166,10 @@ f = (u, p, t) -> theta*(mu-u)
 g = (u, p, t) ->  sigma
 tspan = (0.0f0, 1.0f0)
 u0 = 0.5f0
-prob = SDEProblem(f, g, u0, tspan)
+
+n_terms = 4
+
+prob = SDEProblem(f, g, u0, tspan, [n_terms])
 # chain = Flux.Chain(Dense(1, 25, σ), Dense(25, 75, σ), Dense(75, 150, σ), Dense(150, 1))
 chain = Chain(
     Dense(1, 25, σ),

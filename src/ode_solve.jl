@@ -404,8 +404,8 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
                             verbose = false,
                             saveat = nothing,
                             maxiters = nothing)
-    println("Called function solve... (ode_solve)")
-    n = 4 # number of wiener expansion terms
+    println("Called function solve... (sde_solve)")
+    # n = 4 # number of wiener expansion terms
     u0 = prob.u0
     tspan = prob.tspan
     # Define the original drift and diffusion terms of the SDE
@@ -413,6 +413,7 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
     g = prob.g # the noise function
 
     p = prob.p
+    n = p[1]
     t0 = tspan[1]
 
     # generate the normal distribution
@@ -504,7 +505,7 @@ function DiffEqBase.__solve(prob::DiffEqBase.AbstractSDEProblem,
         l < abstol
     end
 
-    println("Training... (ode_solve)")
+    println("Training... (sde_solve)")
     optprob = OptimizationProblem(optf, init_params)
     res = solve(optprob, opt; callback, maxiters, alg.kwargs...)
 

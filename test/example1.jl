@@ -35,7 +35,7 @@ sol = solve(prob, nnode, dt = dt, verbose = true,
             abstol = 1.0f-3, maxiters = 2000)
 
 # analytic solution
-u(t) = u0*exp((beta - 0.5 * alpha ^ 2) * t + alpha * sqrt(dt) * randn())
+u(t) = u0*exp((beta - 0.5 * alpha ^ 2) * t + alpha * randn())
 
 u_values = [u.(t) for _ in 1:100];
 

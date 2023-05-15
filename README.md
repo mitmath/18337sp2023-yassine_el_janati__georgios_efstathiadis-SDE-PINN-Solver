@@ -16,11 +16,11 @@
 
   * [ ] PINN training and weak solution
   * [x] debugging code for ode_solve
-  * [ ] conclusion
+  * [x] conclusion/discussion
   * [ ] results
-    * [x] Example 1 | need more work for better results
-    * [ ] Example 2
-    * [ ] Example 3
+    * [ ] Example 1 | need more work for better results
+    * [x] Example 2
+    * [x] Example 3
     * [x] Ornstein-Uhlenbeck Process
 
 
